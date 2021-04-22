@@ -1,0 +1,164 @@
+#Determine the format version so AWS can interpret correctly
+AWSTemplateFormatVersion: "2010-09-09"
+#Will display on console
+Description: A simple CloudFormation Template
+
+#For parameters with default values,
+#CloudFormation uses the default values unless users specify another value.
+#If you omit the default attribute, users are required to specify a value for that parameter;
+Parameters:
+
+  BaseUrl:
+    Type: String
+    Default: kytran.org
+    Description : The DNS name of an existing Amazon Route 53 hosted zone,
+    AllowedPattern : (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)[^\\.]$
+    ConstraintDescription : Must be a valid DNS zone name WITHOUT trailing period.
+
+  AppUrl:
+    Type: String
+    Default: kytran.org
+    Description: The subdomain you want to use for your app. Use www for your main domain.
+
+  AcmCertArn:
+    Type: String
+    Description: ARN of the Amazon Certificate Manager cert to use for SSL
+
+
+#Contains ALL infrastructure that you're adding to the template
+# When CloudFormation creates the resource, it generates a physical name that is based on the combination of the logical name, the stack name, and a unique ID.
+  # Ref: You can use the Ref function to refer to an identifying property of a resource. Frequently, this is the physical name of the resource;
+    #Fn::Ref function is handy if the parameter or the value returned for a resource is exactly what you want;
+  # GetAtt: returns the value of an attribute from a resource in the template.
+    #Fn::GetAtt function takes two parameters, the logical name of the resource and the name of the attribute to be retrieved.
+    #Ex: The following template creates a CloudFront distribution resource that specifies the
+    # DNS name of an S3 bucket resource using Fn::GetAtt function to get the bucket's DomainName attribute.
+Resources:
+  AppBucket:
+    #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-policy.html
+  AppBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: WebAppBucketPolicy
+          Version: 2012-10-17
+          # This property is a list of one object
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              # This property is a list of multiple objects
+              Resource: !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref AppBucket
+                  - /*
+        Bucket: !Ref AppBucket
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudfront-cloudfrontoriginaccessidentity.html
+  # An origin access identity is a special CloudFront user that you can associate with Amazon S3 origins,
+  # so that you can secure all or just some of your Amazon S3 content.
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: Access identity between CloudFront and S3 bucket
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudfront-distribution.html
+  AppDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Sub ${AppBucket}.s3.amazonaws.com
+          Id: myS3Origin
+          S3OriginConfig:
+              OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${OriginAccessIdentity}
+        Enabled: 'true'
+        Comment: CloudFront distribution for Angular App
+        CustomErrorResponses:
+        - ErrorCachingMinTTL: 5
+          ErrorCode: 404
+          ResponseCode: 200
+          ResponsePagePath: /index.html
+        DefaultRootObject: index.html
+        Aliases:
+        - !Ref BaseUrl
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: 'true'
+          TargetOriginId: myS3Origin
+          ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                  Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cloudfront-distribution-viewercertificate.html
+        ViewerCertificate:
+            AcmCertificateArn: !Ref AcmCertArn
+            SslSupportMethod: sni-only
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordsetgroup.html
+  WebAppDns:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !Sub ${BaseUrl}.
+      Comment: IP4 & IP6 alias targeted to CloudFront Distribution.
+      RecordSets:
+      - Name: !Ref AppUrl
+        Type: A
+        AliasTarget:
+          # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html
+          # Specify Z2FDTNDATAQYW2. This is always the hosted zone ID when you create an alias record that routes traffic to a CloudFront distribution.
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName: !GetAtt
+            - AppDistribution
+            - DomainName
+      - Name: !Ref AppUrl
+        Type: AAAA
+        AliasTarget:
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName: !GetAtt
+            - AppDistribution
+            - DomainName
+      # - Name: !Ref BaseUrl
+      #   Type: A
+      #   AliasTarget:
+      #     HostedZoneId: Z09987777O4ZKKT8DTKO
+      #     DNSName: !GetAtt
+      #       - AppDistribution
+      #       - DomainName
+      # - Name: !Ref BaseUrl
+      #   Type: AAAA
+      #   AliasTarget:
+      #     HostedZoneId: Z09987777O4ZKKT8DTKO
+      #     DNSName: !GetAtt
+      #       - AppDistribution
+      #       - DomainName
+Outputs:
+    AppBucket:
+      Description: S3 Bucket hosting our demo-app
+      Value: !Ref AppBucket
+    DistributionId:
+      Value: !Ref AppDistribution
+      Description: CloudFront DistributionId
+    CloudFrontURL:
+      Value: !Join
+        - ''
+        - - 'https://'
+          - !GetAtt
+            - AppDistribution
+            - DomainName
+      Description: URL for website CDN
