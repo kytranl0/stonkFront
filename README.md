@@ -23,7 +23,7 @@ Run `aws cloudformation deploy --template-file template.yaml --stack-name stonkf
 ### Deploy Your Angular app to a S3 Bucket
 Run ```aws cloudformation describe-stacks --stack-name stonkfrontwebapp --query "Stacks[0].Outputs[?OutputKey==`DistributionId` || OutputKey==`AppBucket`].OutputValue"```
 
-In `package.json`, replace `{AppBucket}` with first element and `{DistributionId}` with second element. 
+In `package.json`, replace `{AppBucket}` and `{DistributionId}` with your stack output. 
 
 Run `npm run deploy`
 
