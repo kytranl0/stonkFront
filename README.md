@@ -21,7 +21,7 @@ Add your validated certificate's arn to `acm-arn-config.json`
 Run `aws cloudformation deploy --template-file template.yaml --stack-name stonkfrontwebapp --parameter-overrides file://acm-arn-config.json`
 
 ### Deploy Your Angular app to a S3 Bucket
-Run `aws cloudformation describe-stacks --stack-name stonkfrontwebapp --query "Stacks[0].Outputs[?OutputKey==``` `DistributionId` ```|| OutputKey==``` `AppBucket` ```].OutputValue"`
+Run ```aws cloudformation describe-stacks --stack-name stonkfrontwebapp --query "Stacks[0].Outputs[?OutputKey==`DistributionId` || OutputKey==`AppBucket`].OutputValue"```
 
 In `package.json`, replace `{AppBucket}` with first element and `{DistributionId}` with second element. 
 
