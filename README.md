@@ -20,10 +20,12 @@ Run `aws cloudformation deploy --template-file template.yaml --stack-name stonkf
 
 ### Deploy Your Angular app to a S3 Bucket
 Run `aws cloudformation describe-stacks --stack-name stonkfrontwebapp --query "Stacks[0].Outputs[?OutputKey==`DistributionId` || OutputKey==`AppBucket`].OutputValue"`
+
 In `package.json`, replace `{AppBucket}` with first element and `{DistributionId}` with second element. 
+
 Run `npm run deploy`
 
 ### Note
 While executing `npm run deploy`, two AWS commands will execute:
-`aws s3 sync` - Syncs directories and S3 prefixes. Recursively copies new and updated files from the source directory to the destination. 
-`aws cloudfront create-invalidation` -Invalidate the file from edge caches. The next time a viewer requests the file, CloudFront returns to the origin to fetch the latest version of the file.  
+* `aws s3 sync` - Syncs directories and S3 prefixes. Recursively copies new and updated files from the source directory to the destination. 
+* `aws cloudfront create-invalidation` -Invalidate the file from edge caches. The next time a viewer requests the file, CloudFront returns to the origin to fetch the latest version of the file.  
