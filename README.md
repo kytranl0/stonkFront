@@ -1,7 +1,7 @@
 # CloudFormation Stack
 
 ## Introduction
-Use CloudFormation to provision infrastructure in AWS for an Angular app. We will upload our Angular application to a S3 bucket which will be hosted by CloudFront. 
+Use CloudFormation to provision infrastructure in AWS. We will upload our Angular application to a S3 bucket which will be hosted by CloudFront. 
 
 ### Prerequisites
 * [Configured AWS CLI v.2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
@@ -9,8 +9,10 @@ Use CloudFormation to provision infrastructure in AWS for an Angular app. We wil
 * [Validated certificate from AWS Certificate Manager](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html) 
 
 ### CloudFormation Template Description
-Create an AWS CloudFront distribution backed by an AWS S3 bucket origin. 
-Create AWS Route 53 alias records and route it to CloudFront distribution.
+Create
+  1. AWS S3 bucket with policy
+  2. An AWS CloudFront distribution backed by an AWS S3 bucket origin. 
+  3. AWS Route 53 alias records and route it to CloudFront distribution.
 
 ### Before Deploying Your Stack
 Add your validated certificate's arn to `acm-arn-config.json`
