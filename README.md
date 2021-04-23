@@ -30,6 +30,9 @@ Run `npm run deploy`
 ### Note
 While executing `npm run deploy`, two AWS commands will execute:
 * `aws s3 sync` - Syncs directories and S3 prefixes. Recursively copies new and updated files from the source directory to the destination. 
-* `aws cloudfront create-invalidation` -Invalidate the file from edge caches. The next time a viewer requests the file, CloudFront returns to the origin to fetch the latest version of the file.  
+* `aws cloudfront create-invalidation` -Invalidate the file from edge caches. The next time a viewer requests the file, CloudFront returns to the origin to fetch the latest version of the file.
+
+If you would like to revert or delete all resources created by CloudFormation in AWS. You can run
+`aws cloudformation delete-stack --stack-name stonkfrontwebapp`
 
 Courtesy to https://github.com/ibliskavka/aws-angular-stack-starter
